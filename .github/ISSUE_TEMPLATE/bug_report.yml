@@ -1,0 +1,41 @@
+name: Bug Report
+description: Report a bug to be investigated and fixed by the Developer Agent.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! The **Reviewer Agent** or **Developer Agent** will investigate this issue, write a test to reproduce it, and submit a PR with the fix.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Provide a clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps To Reproduce
+      description: Provide steps to reproduce the behavior so the agent can write an automated test.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Information about the MCP client, OS, and server version.
+      value: |
+        - **MCP Client**: (e.g., Claude Code, Cursor)
+        - **OS**: 
+        - **Server Version**: 
+    validations:
+      required: false

@@ -1,0 +1,85 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+.envrc
+
+# PEP 582
+__pypackages__/
+
+# ---- Testing / type-checking / linting ----
+.pytest_cache/
+.cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# ---- IDEs / editors ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- skills-mcp-server runtime state ----
+# The server caches git-cloned skill sources and keeps per-invocation temp dirs.
+# These are environment-specific and must never be committed.
+.skills-mcp-cache/
+.skills-mcp-data/
+/tmp/skills-mcp/
+skills_audit.jsonl
+
+# Local operator config — may contain secrets (webhook bearers, private repo tokens)
+config.local.yaml
+config.*.local.yaml
+
+# ---- Secrets ----
+*.pem
+*.key
+.secrets
+secrets/

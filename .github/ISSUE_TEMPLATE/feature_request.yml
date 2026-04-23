@@ -1,0 +1,30 @@
+name: Feature Request / Agent Implementation
+description: Propose a new feature, enhancement, or skill for an agent to implement.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new feature! The **Architect Agent** will review this request, break it down into an implementation plan, and assign it to the **Developer Agent** for execution.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the requested feature or enhancement.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements / Acceptance Criteria
+      description: List the technical requirements or acceptance criteria the Developer Agent should fulfill.
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, links to SPEC.md, or screenshots about the feature request here.
+    validations:
+      required: false
