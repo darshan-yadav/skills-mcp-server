@@ -1,0 +1,17 @@
+# Central MCP over HTTP (SSE). Bind to a private interface / security group.
+# Usage: docker compose -f docker-compose.central.yml up --build
+#
+# MCP base URL for clients: http://<host>:8847  (skills-sync: --from http://<host>:8847)
+# SSE entry: GET http://<host>:8847/sse
+
+services:
+  skills-mcp-http:
+    build: .
+    image: skills-mcp-server:local
+    ports:
+      - "8847:8847"
+    volumes:
+      - ./skills:/skills:ro
+      - ./config:/config:ro
+      - ./data:/data
+    command: ["run-http", "--config", "/config/config.yaml"]

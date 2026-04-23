@@ -28,7 +28,7 @@ ENV TMPDIR=/tmp
 
 USER appuser
 
-EXPOSE 8080
+EXPOSE 8080 8847
 
 ENTRYPOINT ["skills-mcp-server"]
 CMD ["run", "--config", "/config/config.yaml"]

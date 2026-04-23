@@ -20,6 +20,12 @@ def main() -> int:
     run_parser = subparsers.add_parser("run", help="Run the MCP stdio server")
     run_parser.add_argument("--config", type=Path, default=Path("config.yaml"), help="Path to config file")
 
+    run_http_parser = subparsers.add_parser(
+        "run-http",
+        help="Run MCP over HTTP (SSE) for central deployment (GET /sse, POST /messages/)",
+    )
+    run_http_parser.add_argument("--config", type=Path, default=Path("config.yaml"), help="Path to config file")
+
     init_parser = subparsers.add_parser("init", help="Create a default config.yaml")
     init_parser.add_argument("dir", type=Path, nargs="?", default=Path("."), help="Directory to initialize")
 
@@ -127,6 +133,28 @@ log_level: info
             asyncio.run(run_daemons())
         except KeyboardInterrupt:
             pass
+        return 0
+
+    if args.command == "run-http":
+        registry.reload()
+        mcp_server = create_mcp_server(registry)
+
+        import uvicorn
+
+        from skills_mcp_server.http_transport import create_http_starlette_app
+
+        starlette_app = create_http_starlette_app(mcp_server=mcp_server, registry=registry, config=config)
+        logger.info(
+            "HTTP MCP listening on http://%s:%s/sse (health: GET /health, reload: POST /admin/reload)",
+            config.http_host,
+            config.http_port,
+        )
+        uvicorn.run(
+            starlette_app,
+            host=config.http_host,
+            port=config.http_port,
+            log_level=config.log_level.lower(),
+        )
         return 0
 
     if args.command == "reload":

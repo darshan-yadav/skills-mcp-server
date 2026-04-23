@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "skills": {
+      "url": "http://127.0.0.1:8847/sse"
+    }
+  }
+}

@@ -198,6 +198,16 @@ class Config(BaseModel):
         default=None,
         description="Optional bearer token for the /webhook/reload endpoint.",
     )
+    http_host: str = Field(
+        default="0.0.0.0",
+        description="Bind address for ``run-http`` (SSE MCP + reload routes on one port).",
+    )
+    http_port: int = Field(
+        default=8847,
+        ge=1,
+        le=65535,
+        description="TCP port for ``run-http`` (GET /sse, POST /messages/, reload endpoints).",
+    )
 
     @model_validator(mode="after")
     def _unique_source_names(self) -> Config:
