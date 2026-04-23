@@ -56,10 +56,10 @@ async def test_mcp_end_to_end(tmp_path):
     tools_result = await app.request_handlers[types.ListToolsRequest](
         types.ListToolsRequest(method="tools/list")
     )
-    # 2 tools: built-in refresh_skills + test-tool
-    assert len(tools_result.root.tools) == 2
+    # 5 tools: built-in refresh_skills + list_skills + get_skill_manifest + server_info + test-tool
+    assert len(tools_result.root.tools) == 5
     assert tools_result.root.tools[0].name == "refresh_skills"
-    assert tools_result.root.tools[1].name == "test-tool"
+    assert tools_result.root.tools[-1].name == "test-tool"
     
     # Call tool
     call_res = await app.request_handlers[types.CallToolRequest](

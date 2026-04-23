@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "skills-sync"
+version = "0.1.0.dev0"
+description = "Companion CLI to materialise skills from skills-mcp-server into the local filesystem."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Darshan Yadav" },
+]
+dependencies = [
+    "mcp",
+    "aiohttp",
+    "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+skills-sync = "skills_sync.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/skills_sync"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

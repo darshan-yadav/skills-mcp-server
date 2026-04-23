@@ -112,6 +112,36 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
                 inputSchema={"type": "object", "properties": {}}
             )
         )
+        tools.append(
+            types.Tool(
+                name="list_skills",
+                description="Returns the full skill index — name, description, version, source, git ref, tag list. Callable by any client.",
+                inputSchema={"type": "object", "properties": {}}
+            )
+        )
+        tools.append(
+            types.Tool(
+                name="get_skill_manifest",
+                description="Returns the parsed frontmatter for one skill.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the skill"
+                        }
+                    },
+                    "required": ["name"]
+                }
+            )
+        )
+        tools.append(
+            types.Tool(
+                name="server_info",
+                description="Returns server version, loaded-source summary, counts.",
+                inputSchema={"type": "object", "properties": {}}
+            )
+        )
         
         for bundle, tool_man in registry.iter_tools():
             schema = tool_man.arguments or {"type": "object", "properties": {}}
@@ -126,10 +156,54 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
 
     @app.call_tool()
     async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-        if name == "refresh_skills":
-            # For now, do an in-process reload. T29 will wire this to the admin IPC.
+        args = arguments or {}
+        if name in ("refresh_skills", "reload"):
+            # For now, do an in-process reload.
             registry.reload()
             return [types.TextContent(type="text", text="Skills reloaded successfully.")]
+            
+        if name == "list_skills":
+            skills = []
+            for bundle in registry.iter_bundles():
+                tools_registered = [
+                    tool_man.name
+                    for b, tool_man in registry.iter_tools()
+                    if b.manifest.name == bundle.manifest.name
+                ]
+                extra = bundle.manifest.extra or {}
+                version = extra.get("version", "0.0.0")
+                tags = extra.get("tags") or []
+                skills.append({
+                    "name": bundle.manifest.name,
+                    "version": version if isinstance(version, str) else "0.0.0",
+                    "description": bundle.manifest.description,
+                    "source": bundle.source_name,
+                    "git_ref": bundle.commit_sha or "local",
+                    "tags": tags if isinstance(tags, list) else [],
+                    "tools_registered": tools_registered,
+                })
+            import json
+            return [types.TextContent(type="text", text=json.dumps(skills))]
+            
+        if name == "get_skill_manifest":
+            skill_name = args.get("name")
+            if not skill_name:
+                raise ValueError("Missing 'name' argument")
+            bundle = registry.get_bundle(skill_name)
+            if not bundle:
+                raise ValueError(f"Skill not found: {skill_name}")
+            import json
+            from dataclasses import asdict
+            return [types.TextContent(type="text", text=json.dumps(asdict(bundle.manifest)))]
+            
+        if name == "server_info":
+            info = {
+                "version": "0.1",
+                "skills_count": sum(1 for _ in registry.iter_bundles()),
+                "sources_count": len(registry.sources)
+            }
+            import json
+            return [types.TextContent(type="text", text=json.dumps(info))]
 
         tool_entry = registry.get_tool(name)
         if not tool_entry:
@@ -138,7 +212,6 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
         bundle, tool_man = tool_entry
         from skills_mcp_server.executor import execute_tool, ExecutorError
         
-        args = arguments or {}
         try:
             result = await execute_tool(bundle.bundle_path, tool_man.script, args)
         except ExecutorError as e:
