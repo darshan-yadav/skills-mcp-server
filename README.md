@@ -68,19 +68,28 @@ Reload MCP from your editor and you'll see your skills as prompts.
 
 **Put your skills in the `skills/` folder at the repo root.** One folder per skill, each with a `SKILL.md` inside. That folder is mounted into the server as `/skills` — nothing else to configure.
 
+You can keep skills flat directly under `skills/`, or group them into subdirectories (e.g. `skills/roles/`, `skills/security/`). The server walks up to **3 directories deep** and discovers every folder that contains a `SKILL.md`. Resource URIs always use just the leaf folder name — `skill://local/<folder>/<path>` — so grouping is free organisation with no URI impact.
+
 ```text
 skills-mcp-server/
 ├── skills/                         ← drop your skills here
-│   ├── example-greeting/           ← sample bundled with the repo
+│   ├── example-greeting/           ← flat layout (depth 1)
 │   │   └── SKILL.md
 │   ├── my-first-skill/             ← your new skill
 │   │   └── SKILL.md
+│   ├── roles/                      ← grouped layout (depth 2)
+│   │   ├── dev/
+│   │   │   └── SKILL.md
+│   │   └── qa/
+│   │       └── SKILL.md
 │   └── summarize-doc/              ← skills can bundle extra files
 │       ├── SKILL.md
 │       ├── REFERENCE.md
 │       └── scripts/
 │           └── helper.py
 ```
+
+> The **folder name** becomes the slug in the resource URI. Keep folder names unique within a source — if two bundles share a leaf name (`skills/a/dev/` and `skills/b/dev/`), only the first one wins.
 
 Create `skills/my-first-skill/SKILL.md`:
 
