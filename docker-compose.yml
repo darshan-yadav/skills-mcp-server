@@ -1,0 +1,11 @@
+services:
+  skills-mcp-server:
+    build: .
+    image: skills-mcp-server:local
+    volumes:
+      - ./skills:/skills:ro
+      - ./config:/config:ro
+      - ./data:/data
+    command: ["run", "--config", "/config/config.yaml"]
+    stdin_open: true
+    tty: false

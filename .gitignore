@@ -66,6 +66,9 @@ desktop.ini
 *.log
 logs/
 
+# Docker Compose bind mount for server writable state (git cache, locks)
+/data/
+
 # ---- skills-mcp-server runtime state ----
 # The server caches git-cloned skill sources and keeps per-invocation temp dirs.
 # These are environment-specific and must never be committed.

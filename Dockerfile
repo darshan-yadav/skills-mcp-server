@@ -31,4 +31,4 @@ USER appuser
 EXPOSE 8080
 
 ENTRYPOINT ["skills-mcp-server"]
-CMD ["run", "--config", "/data/config.yaml"]
+CMD ["run", "--config", "/config/config.yaml"]

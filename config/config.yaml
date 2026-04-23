@@ -1,0 +1,6 @@
+sources:
+  - name: local
+    type: local
+    path: /skills
+data_dir: /data
+log_level: info
