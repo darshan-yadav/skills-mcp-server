@@ -188,6 +188,16 @@ class Config(BaseModel):
             "periodic refresh — sources only reload on explicit CLI reload."
         ),
     )
+    webhook_port: int = Field(
+        default=8080,
+        ge=1,
+        le=65535,
+        description="Port to bind the aiohttp Live Daemon (for /webhook/reload and /admin/reload).",
+    )
+    webhook_secret: str | None = Field(
+        default=None,
+        description="Optional bearer token for the /webhook/reload endpoint.",
+    )
 
     @model_validator(mode="after")
     def _unique_source_names(self) -> Config:

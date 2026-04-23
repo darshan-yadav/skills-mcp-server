@@ -190,8 +190,41 @@ def _parse_skill_md(raw: str, path: Path) -> tuple[SkillManifest, str]:
             f"{path}: frontmatter is missing required string `description`"
         )
 
-    extra = {k: v for k, v in data.items() if k not in ("name", "description")}
-    manifest = SkillManifest(name=name, description=description, extra=extra)
+    from skills_mcp_server.models import ToolManifest
+
+    extra = {k: v for k, v in data.items() if k not in ("name", "description", "tools")}
+    
+    tools_data = data.get("tools", [])
+    if not isinstance(tools_data, list):
+        raise SourceError(f"{path}: frontmatter 'tools' must be a list if present")
+    
+    parsed_tools = []
+    for i, t in enumerate(tools_data):
+        if not isinstance(t, dict):
+            logger.warning("source %s tool at index %d is not a mapping, skipping", path, i)
+            continue
+        t_name = t.get("name")
+        t_desc = t.get("description")
+        t_script = t.get("script")
+        t_args = t.get("arguments")
+        
+        if not isinstance(t_name, str) or not isinstance(t_desc, str) or not isinstance(t_script, str):
+            logger.warning("source %s tool %r is missing required string fields (name, description, script), skipping", path, t_name)
+            continue
+            
+        parsed_tools.append(ToolManifest(
+            name=t_name,
+            description=t_desc,
+            script=t_script,
+            arguments=t_args if isinstance(t_args, dict) else None
+        ))
+
+    manifest = SkillManifest(
+        name=name, 
+        description=description, 
+        tools=tuple(parsed_tools),
+        extra=extra
+    )
     # Strip leading blank line often left between the closing fence and
     # the real body. Preserves interior whitespace.
     if body.startswith("\n"):
@@ -208,17 +241,20 @@ def _list_bundle_resources(bundle_path: Path) -> tuple[Path, ...]:
     """
 
     names: list[Path] = []
+    bundle_real_str = str(os.path.realpath(bundle_path))
     with os.scandir(bundle_path) as it:
         for entry in it:
-            # Only top-level regular files. Skip directories and
-            # whatever symlinks resolve to non-files. follow_symlinks=True
-            # on is_file matches the realpath discipline used elsewhere.
             try:
                 if entry.is_file(follow_symlinks=True):
-                    names.append(Path(entry.name))
+                    entry_real_str = str(os.path.realpath(entry.path))
+                    if entry_real_str == bundle_real_str or entry_real_str.startswith(bundle_real_str + os.sep):
+                        names.append(Path(entry.name))
+                    else:
+                        logger.warning(
+                            "skipping resource %s — realpath %s escapes bundle %s",
+                            entry.name, entry_real_str, bundle_real_str
+                        )
             except OSError:
-                # Broken symlink or unreadable entry — skip silently; the
-                # bundle is still valid as long as SKILL.md is intact.
                 continue
     names.sort()
     return tuple(names)

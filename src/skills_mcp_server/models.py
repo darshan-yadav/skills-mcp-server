@@ -14,16 +14,26 @@ from typing import Any, Mapping
 
 
 @dataclass(frozen=True, slots=True)
+class ToolManifest:
+    """A tool declared in a SKILL.md bundle."""
+
+    name: str
+    description: str
+    script: str
+    arguments: Mapping[str, Any] | None = None
+
+@dataclass(frozen=True, slots=True)
 class SkillManifest:
     """Parsed SKILL.md frontmatter — see SPEC §6.1.
 
     `name` and `description` are required; every other frontmatter key
-    (license, version, tags, resources, tools, trust_level, dependencies,
+    (license, version, tags, resources, trust_level, dependencies,
     plus any unknown keys) passes through untouched in ``extra``.
     """
 
     name: str
     description: str
+    tools: tuple[ToolManifest, ...] = field(default_factory=tuple)
     extra: Mapping[str, Any] = field(default_factory=dict)
 
 

@@ -28,6 +28,7 @@ dependencies = [
     "PyYAML",
     "pydantic>=2",
     "GitPython",
+    "aiohttp",
 ]
 
 [project.optional-dependencies]
