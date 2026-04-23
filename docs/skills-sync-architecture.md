@@ -49,10 +49,10 @@ This supports future `--dry-run` diffs and operator audits.
 
 When the server registers MCP tools for a skill (same names as declared in the manifest `tools:` list), the materialised bundle must not invite **local** script execution:
 
-1. `list_skills` provides `tools_registered` per skill (authoritative).
+1. `list_skills` provides `tools_registered` per skill (authoritative; **empty in v0.1** because the server does not register per-skill MCP tools until phase 2, §16.1).
 2. If every declared tool name is in `tools_registered`, **strip** the `tools:` block from the written manifest, **skip** materialising paths under `scripts/`, and **prepend** a short note to the body pointing agents at MCP tool invocation.
 
-If `list_skills` fails, the implementation falls back to matching declared tool names against `list_tools` minus built-in server tools.
+If `list_skills` fails, split-brain rewriting is skipped (conservative: materialise manifest unchanged).
 
 ## Out of scope (v0.1)
 

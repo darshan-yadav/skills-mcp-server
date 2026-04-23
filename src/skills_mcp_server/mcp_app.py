@@ -2,6 +2,7 @@
 
 Exposes loaded skills as MCP Prompts and Resources.
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,6 +16,8 @@ from mcp.server import Server
 from skills_mcp_server.registry import SkillRegistry
 
 logger = logging.getLogger(__name__)
+
+CallToolResult = list[types.TextContent | types.ImageContent | types.EmbeddedResource]
 
 
 def create_mcp_server(registry: SkillRegistry) -> Server:
@@ -48,9 +51,9 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
                     content=types.TextContent(
                         type="text",
                         text=bundle.body,
-                    )
+                    ),
                 )
-            ]
+            ],
         )
 
     @app.list_resources()
@@ -75,51 +78,45 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
         parsed = urlparse(str(uri))
         if parsed.scheme != "skill":
             raise ValueError(f"Unsupported URI scheme: {parsed.scheme}")
-        
+
         parts = parsed.netloc + parsed.path
         parts_list = parts.split("/", 2)
         if len(parts_list) < 3:
             raise ValueError(f"Invalid resource URI: {uri}")
-        
+
         source_name, slug, res_path_str = parts_list
-        
+
         target_bundle = None
         for bundle in registry.iter_bundles():
             if bundle.source_name == source_name and bundle.slug == slug:
                 target_bundle = bundle
                 break
-                
+
         if not target_bundle:
             raise ValueError(f"Resource not found: {uri}")
-            
+
         target_path = Path(res_path_str)
         if target_path not in target_bundle.resources:
             raise ValueError(f"Resource not found or access denied: {uri}")
-            
+
         real_path = target_bundle.bundle_path / target_path
         try:
-            return real_path.read_bytes().decode('utf-8')
+            return real_path.read_bytes().decode("utf-8")
         except UnicodeDecodeError:
             return real_path.read_bytes()
 
     @app.list_tools()
     async def handle_list_tools() -> list[types.Tool]:
-        tools = []
-        tools.append(
-            types.Tool(
-                name="refresh_skills",
-                description="Trigger a background reload of all skill sources. Use this after merging a PR to sync the server cache immediately.",
-                inputSchema={"type": "object", "properties": {}}
-            )
-        )
-        tools.append(
+        """v0.1: four server tools only — no per-skill execution tools (§8.3–§8.4)."""
+        return [
             types.Tool(
                 name="list_skills",
-                description="Returns the full skill index — name, description, version, source, git ref, tag list. Callable by any client.",
-                inputSchema={"type": "object", "properties": {}}
-            )
-        )
-        tools.append(
+                description=(
+                    "Returns the full skill index — name, description, version, source, "
+                    "git ref, tags, tools_registered (empty in v0.1). Callable by any client."
+                ),
+                inputSchema={"type": "object", "properties": {}},
+            ),
             types.Tool(
                 name="get_skill_manifest",
                 description="Returns the parsed frontmatter for one skill.",
@@ -128,63 +125,57 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
                     "properties": {
                         "name": {
                             "type": "string",
-                            "description": "Name of the skill"
+                            "description": "Name of the skill",
                         }
                     },
-                    "required": ["name"]
-                }
-            )
-        )
-        tools.append(
+                    "required": ["name"],
+                },
+            ),
+            types.Tool(
+                name="reload",
+                description=(
+                    "Triggers an immediate reload of all skill sources "
+                    "(re-scan local, pull git). May perform outbound git fetches."
+                ),
+                inputSchema={"type": "object", "properties": {}},
+            ),
             types.Tool(
                 name="server_info",
                 description="Returns server version, loaded-source summary, counts.",
-                inputSchema={"type": "object", "properties": {}}
-            )
-        )
-        
-        for bundle, tool_man in registry.iter_tools():
-            schema = tool_man.arguments or {"type": "object", "properties": {}}
-            tools.append(
-                types.Tool(
-                    name=tool_man.name,
-                    description=tool_man.description,
-                    inputSchema=schema
-                )
-            )
-        return tools
+                inputSchema={"type": "object", "properties": {}},
+            ),
+        ]
 
     @app.call_tool()
-    async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
+    async def handle_call_tool(name: str, arguments: dict | None) -> CallToolResult:
         args = arguments or {}
-        if name in ("refresh_skills", "reload"):
-            # For now, do an in-process reload.
+        if name == "reload":
             registry.reload()
             return [types.TextContent(type="text", text="Skills reloaded successfully.")]
-            
+
         if name == "list_skills":
             skills = []
             for bundle in registry.iter_bundles():
-                tools_registered = [
-                    tool_man.name
-                    for b, tool_man in registry.iter_tools()
-                    if b.manifest.name == bundle.manifest.name
-                ]
+                # v0.1: no server-side skill tools — always empty (phase 2: §16.1).
+                tools_registered: list[str] = []
                 extra = bundle.manifest.extra or {}
                 version = extra.get("version", "0.0.0")
                 tags = extra.get("tags") or []
-                skills.append({
-                    "name": bundle.manifest.name,
-                    "version": version if isinstance(version, str) else "0.0.0",
-                    "description": bundle.manifest.description,
-                    "source": bundle.source_name,
-                    "git_ref": bundle.commit_sha or "local",
-                    "tags": tags if isinstance(tags, list) else [],
-                    "tools_registered": tools_registered,
-                })
+                skills.append(
+                    {
+                        "name": bundle.manifest.name,
+                        "version": version if isinstance(version, str) else "0.0.0",
+                        "description": bundle.manifest.description,
+                        "source": bundle.source_name,
+                        "git_ref": bundle.commit_sha or "local",
+                        "tags": tags if isinstance(tags, list) else [],
+                        "tools_registered": tools_registered,
+                    }
+                )
             import json
+
             return [types.TextContent(type="text", text=json.dumps(skills))]
-            
+
         if name == "get_skill_manifest":
             skill_name = args.get("name")
             if not skill_name:
@@ -194,34 +185,19 @@ def create_mcp_server(registry: SkillRegistry) -> Server:
                 raise ValueError(f"Skill not found: {skill_name}")
             import json
             from dataclasses import asdict
+
             return [types.TextContent(type="text", text=json.dumps(asdict(bundle.manifest)))]
-            
+
         if name == "server_info":
             info = {
                 "version": "0.1",
                 "skills_count": sum(1 for _ in registry.iter_bundles()),
-                "sources_count": len(registry.sources)
+                "sources_count": len(registry.sources),
             }
             import json
+
             return [types.TextContent(type="text", text=json.dumps(info))]
 
-        tool_entry = registry.get_tool(name)
-        if not tool_entry:
-            raise ValueError(f"Unknown tool: {name}")
-            
-        bundle, tool_man = tool_entry
-        from skills_mcp_server.executor import execute_tool, ExecutorError
-        
-        try:
-            result = await execute_tool(bundle.bundle_path, tool_man.script, args)
-        except ExecutorError as e:
-            return [types.TextContent(type="text", text=f"Execution error: {e}")]
-            
-        mcp_content = []
-        for c in result.content:
-            if c.type == "text":
-                mcp_content.append(types.TextContent(type="text", text=c.text))
-            # Other types could be mapped here if needed
-        return mcp_content
+        raise ValueError(f"Unknown tool: {name}")
 
     return app

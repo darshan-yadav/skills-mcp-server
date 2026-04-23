@@ -19,16 +19,6 @@ from mcp.client.stdio import StdioServerParameters, get_default_environment, std
 
 logger = logging.getLogger(__name__)
 
-_BUILTIN_TOOL_NAMES = frozenset(
-    {
-        "refresh_skills",
-        "reload",
-        "list_skills",
-        "get_skill_manifest",
-        "server_info",
-    }
-)
-
 
 def _parse_skill_resource_uri(uri: str) -> tuple[str, str, str] | None:
     """Return (source_name, slug, relative_path) for skill:// URIs, else None."""
@@ -133,10 +123,6 @@ async def _perform_sync(
     resources_resp = await session.list_resources()
     resources = resources_resp.resources
 
-    tools_resp = await session.list_tools()
-    server_tool_names = {t.name for t in tools_resp.tools}
-    skill_tool_names = server_tool_names - _BUILTIN_TOOL_NAMES
-
     list_skills_payload: list[dict[str, Any]] = []
     try:
         ls_resp = await session.call_tool("list_skills", {})
@@ -187,13 +173,6 @@ async def _perform_sync(
         tools_registered = skill_row.get("tools_registered") or []
         if not isinstance(tools_registered, list):
             tools_registered = []
-
-        if not tools_registered and manifest.get("tools"):
-            tools_registered = [
-                t.get("name")
-                for t in manifest["tools"]
-                if isinstance(t, dict) and t.get("name") in skill_tool_names
-            ]
 
         force_server_exec = _should_force_server_execution(manifest, tools_registered)
         if force_server_exec:

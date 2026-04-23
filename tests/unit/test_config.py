@@ -24,7 +24,6 @@ from skills_mcp_server.config import (
     load_config,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -44,9 +43,7 @@ def _write_yaml(path: Path, data: dict[str, Any] | str) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def test_load_minimal_valid_config(
-    tmp_path: Path, local_sample_skills_dir: Path
-) -> None:
+def test_load_minimal_valid_config(tmp_path: Path, local_sample_skills_dir: Path) -> None:
     """A minimal single-local-source config loads and carries sensible defaults."""
     config_path = _write_yaml(
         tmp_path / "config.yaml",
@@ -182,9 +179,7 @@ sources:
 # ---------------------------------------------------------------------------
 
 
-def test_invalid_source_type_rejected(
-    tmp_path: Path, local_sample_skills_dir: Path
-) -> None:
+def test_invalid_source_type_rejected(tmp_path: Path, local_sample_skills_dir: Path) -> None:
     """An unknown discriminator value surfaces a readable error."""
     config_path = _write_yaml(
         tmp_path / "config.yaml",
@@ -228,9 +223,7 @@ def test_missing_required_field_rejected(tmp_path: Path) -> None:
     assert "name" in str(exc_info.value)
 
 
-def test_duplicate_source_names_rejected(
-    tmp_path: Path, local_sample_skills_dir: Path
-) -> None:
+def test_duplicate_source_names_rejected(tmp_path: Path, local_sample_skills_dir: Path) -> None:
     """Two sources sharing a ``name`` are rejected, and the name is surfaced."""
     config_path = _write_yaml(
         tmp_path / "config.yaml",
@@ -298,14 +291,10 @@ def test_local_path_not_a_directory_rejected(tmp_path: Path) -> None:
     with pytest.raises(ConfigError) as exc_info:
         load_config(config_path)
 
-    assert "not a directory" in str(exc_info.value) or "directory" in str(
-        exc_info.value
-    )
+    assert "not a directory" in str(exc_info.value) or "directory" in str(exc_info.value)
 
 
-def test_local_path_is_realpath_resolved(
-    tmp_path: Path, local_sample_skills_dir: Path
-) -> None:
+def test_local_path_is_realpath_resolved(tmp_path: Path, local_sample_skills_dir: Path) -> None:
     """A symlinked local path resolves to its realpath on the loaded config."""
     symlink_path = tmp_path / "skills-link"
     symlink_path.symlink_to(local_sample_skills_dir, target_is_directory=True)
@@ -356,9 +345,7 @@ def test_file_not_found_raises_configerror(tmp_path: Path) -> None:
     assert "not found" in str(exc_info.value) or str(missing) in str(exc_info.value)
 
 
-def test_unknown_top_level_key_rejected(
-    tmp_path: Path, local_sample_skills_dir: Path
-) -> None:
+def test_unknown_top_level_key_rejected(tmp_path: Path, local_sample_skills_dir: Path) -> None:
     """An unknown top-level key (typo) is rejected — extra='forbid'."""
     config_path = _write_yaml(
         tmp_path / "config.yaml",

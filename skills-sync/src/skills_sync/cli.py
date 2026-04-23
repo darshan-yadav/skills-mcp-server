@@ -21,10 +21,7 @@ def main():
         "--from",
         dest="from_uri",
         required=True,
-        help=(
-            "MCP base URL (http(s)://…) or stdio command "
-            "(e.g. 'python -m skills_mcp_server run --config cfg.yaml')"
-        ),
+        help=("MCP base URL (http(s)://…) or stdio command (e.g. 'python -m skills_mcp_server run --config cfg.yaml')"),
     )
     pull_parser.add_argument(
         "--to",
@@ -63,6 +60,7 @@ def main():
             if args.debug:
                 raise
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

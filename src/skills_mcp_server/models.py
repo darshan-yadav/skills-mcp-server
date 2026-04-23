@@ -8,9 +8,10 @@ validation types; these are plain immutable dataclasses.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +22,7 @@ class ToolManifest:
     description: str
     script: str
     arguments: Mapping[str, Any] | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class SkillManifest:

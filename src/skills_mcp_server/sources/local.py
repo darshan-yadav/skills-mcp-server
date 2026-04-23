@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import yaml
 
@@ -22,6 +23,9 @@ logger = logging.getLogger(__name__)
 # SKILL.md as defining a bundle. root/SKILL.md is depth 0, root/a/SKILL.md
 # is depth 1, root/a/b/SKILL.md is depth 3 (the spec's stated upper bound).
 _MAX_BUNDLE_DEPTH = 3
+
+# Maximum depth (relative to bundle root) for MCP resources under a bundle.
+_MAX_RESOURCE_DEPTH = 16
 
 
 class LocalSource:
@@ -38,13 +42,9 @@ class LocalSource:
         expanded = Path(root).expanduser()
         resolved = Path(os.path.realpath(expanded))
         if not resolved.exists():
-            raise SourceError(
-                f"local source {name!r}: root does not exist: {resolved}"
-            )
+            raise SourceError(f"local source {name!r}: root does not exist: {resolved}")
         if not resolved.is_dir():
-            raise SourceError(
-                f"local source {name!r}: root is not a directory: {resolved}"
-            )
+            raise SourceError(f"local source {name!r}: root is not a directory: {resolved}")
         self.root = resolved
 
     def load(self) -> Iterator[SkillBundle]:
@@ -83,9 +83,7 @@ class LocalSource:
             # rejected per SPEC §10.
             candidate_real = Path(os.path.realpath(current_path))
             candidate_str = str(candidate_real)
-            if candidate_str != root_str and not candidate_str.startswith(
-                root_str + os.sep
-            ):
+            if candidate_str != root_str and not candidate_str.startswith(root_str + os.sep):
                 logger.warning(
                     "source %r: skipping bundle %s — realpath %s escapes root %s",
                     self.name,
@@ -101,9 +99,7 @@ class LocalSource:
             try:
                 raw = skill_md.read_text(encoding="utf-8")
             except OSError as exc:
-                logger.warning(
-                    "source %r: cannot read %s: %s", self.name, skill_md, exc
-                )
+                logger.warning("source %r: cannot read %s: %s", self.name, skill_md, exc)
                 continue
 
             try:
@@ -168,36 +164,30 @@ def _parse_skill_md(raw: str, path: Path) -> tuple[SkillManifest, str]:
         try:
             data = yaml.safe_load(frontmatter_text)
         except yaml.YAMLError as exc:
-            raise SourceError(
-                f"{path}: frontmatter is not valid YAML: {exc}"
-            ) from exc
+            raise SourceError(f"{path}: frontmatter is not valid YAML: {exc}") from exc
     else:
         data = None
 
     if data is None:
         data = {}
     if not isinstance(data, dict):
-        raise SourceError(
-            f"{path}: frontmatter must be a YAML mapping, got {type(data).__name__}"
-        )
+        raise SourceError(f"{path}: frontmatter must be a YAML mapping, got {type(data).__name__}")
 
     name = data.get("name")
     description = data.get("description")
     if not isinstance(name, str) or not name.strip():
         raise SourceError(f"{path}: frontmatter is missing required string `name`")
     if not isinstance(description, str) or not description.strip():
-        raise SourceError(
-            f"{path}: frontmatter is missing required string `description`"
-        )
+        raise SourceError(f"{path}: frontmatter is missing required string `description`")
 
     from skills_mcp_server.models import ToolManifest
 
     extra = {k: v for k, v in data.items() if k not in ("name", "description", "tools")}
-    
+
     tools_data = data.get("tools", [])
     if not isinstance(tools_data, list):
         raise SourceError(f"{path}: frontmatter 'tools' must be a list if present")
-    
+
     parsed_tools = []
     for i, t in enumerate(tools_data):
         if not isinstance(t, dict):
@@ -207,24 +197,22 @@ def _parse_skill_md(raw: str, path: Path) -> tuple[SkillManifest, str]:
         t_desc = t.get("description")
         t_script = t.get("script")
         t_args = t.get("arguments")
-        
-        if not isinstance(t_name, str) or not isinstance(t_desc, str) or not isinstance(t_script, str):
-            logger.warning("source %s tool %r is missing required string fields (name, description, script), skipping", path, t_name)
-            continue
-            
-        parsed_tools.append(ToolManifest(
-            name=t_name,
-            description=t_desc,
-            script=t_script,
-            arguments=t_args if isinstance(t_args, dict) else None
-        ))
 
-    manifest = SkillManifest(
-        name=name, 
-        description=description, 
-        tools=tuple(parsed_tools),
-        extra=extra
-    )
+        if not isinstance(t_name, str) or not isinstance(t_desc, str) or not isinstance(t_script, str):
+            logger.warning(
+                "source %s tool %r is missing required string fields (name, description, script), skipping",
+                path,
+                t_name,
+            )
+            continue
+
+        parsed_tools.append(
+            ToolManifest(
+                name=t_name, description=t_desc, script=t_script, arguments=t_args if isinstance(t_args, dict) else None
+            )
+        )
+
+    manifest = SkillManifest(name=name, description=description, tools=tuple(parsed_tools), extra=extra)
     # Strip leading blank line often left between the closing fence and
     # the real body. Preserves interior whitespace.
     if body.startswith("\n"):
@@ -233,28 +221,52 @@ def _parse_skill_md(raw: str, path: Path) -> tuple[SkillManifest, str]:
 
 
 def _list_bundle_resources(bundle_path: Path) -> tuple[Path, ...]:
-    """Return sorted relative paths of regular files at the top level of
-    ``bundle_path``. Non-recursive — subdirectories are not walked here;
-    bundle layout in SPEC §6.2 keeps auxiliary assets at the top level,
-    and deeper walks would widen the attack surface for symlink escape.
-    Always includes ``SKILL.md`` itself.
+    """Return sorted relative paths of all regular files under ``bundle_path``.
+
+    Walks recursively up to ``_MAX_RESOURCE_DEPTH``. Each file's
+    ``os.path.realpath`` must remain inside the bundle (SPEC §10).
     """
 
+    bundle_real = Path(os.path.realpath(bundle_path))
+    bundle_real_str = str(bundle_real)
     names: list[Path] = []
-    bundle_real_str = str(os.path.realpath(bundle_path))
-    with os.scandir(bundle_path) as it:
-        for entry in it:
+
+    for dirpath, _dirnames, filenames in os.walk(bundle_real, followlinks=False):
+        current = Path(dirpath)
+        try:
+            rel_dir = current.relative_to(bundle_real)
+        except ValueError:
+            continue
+        depth = 0 if rel_dir == Path(".") else len(rel_dir.parts)
+        if depth > _MAX_RESOURCE_DEPTH:
+            continue
+
+        for fn in filenames:
+            fp = current / fn
             try:
-                if entry.is_file(follow_symlinks=True):
-                    entry_real_str = str(os.path.realpath(entry.path))
-                    if entry_real_str == bundle_real_str or entry_real_str.startswith(bundle_real_str + os.sep):
-                        names.append(Path(entry.name))
-                    else:
-                        logger.warning(
-                            "skipping resource %s — realpath %s escapes bundle %s",
-                            entry.name, entry_real_str, bundle_real_str
-                        )
+                entry_real_str = str(os.path.realpath(fp))
             except OSError:
                 continue
-    names.sort()
+            if entry_real_str != bundle_real_str and not entry_real_str.startswith(bundle_real_str + os.sep):
+                logger.warning(
+                    "skipping resource %s — realpath %s escapes bundle %s",
+                    fp,
+                    entry_real_str,
+                    bundle_real_str,
+                )
+                continue
+            try:
+                rel = fp.relative_to(bundle_real)
+            except ValueError:
+                continue
+            if len(rel.parts) > _MAX_RESOURCE_DEPTH:
+                continue
+            try:
+                if not fp.is_file():
+                    continue
+            except OSError:
+                continue
+            names.append(rel)
+
+    names.sort(key=lambda p: p.as_posix())
     return tuple(names)

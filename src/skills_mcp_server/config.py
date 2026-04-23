@@ -25,7 +25,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal
 
 import yaml
 from pydantic import (
@@ -137,7 +137,7 @@ class GitSourceConfig(_SourceBase):
 
 
 SourceConfig = Annotated[
-    Union[LocalSourceConfig, GitSourceConfig],
+    LocalSourceConfig | GitSourceConfig,
     Discriminator("type"),
 ]
 
@@ -208,9 +208,7 @@ class Config(BaseModel):
                 duplicates.append(source.name)
             seen.add(source.name)
         if duplicates:
-            raise ValueError(
-                "duplicate source name(s): " + ", ".join(sorted(duplicates))
-            )
+            raise ValueError("duplicate source name(s): " + ", ".join(sorted(duplicates)))
         return self
 
 
@@ -222,9 +220,7 @@ class Config(BaseModel):
 #   group 1: variable name (required; ASCII identifier chars)
 #   group 2: optional ":-default" marker
 #   group 3: default value (may be empty string, may not contain '}')
-_ENV_VAR_RE = re.compile(
-    r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:-([^}]*))?\}"
-)
+_ENV_VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:-([^}]*))?\}")
 
 
 def _substitute_env_vars(text: str, path: Path) -> str:
@@ -328,9 +324,7 @@ def load_config(path: Path | str) -> Config:
     except FileNotFoundError as exc:
         raise ConfigError(f"config file not found: {config_path}") from exc
     except OSError as exc:
-        raise ConfigError(
-            f"could not read config file {config_path}: {exc}"
-        ) from exc
+        raise ConfigError(f"could not read config file {config_path}: {exc}") from exc
 
     # 2. Env-var substitution on the raw text, pre-YAML.
     substituted = _substitute_env_vars(raw_text, config_path)
@@ -339,19 +333,12 @@ def load_config(path: Path | str) -> Config:
     try:
         data = yaml.safe_load(substituted)
     except yaml.YAMLError as exc:
-        raise ConfigError(
-            f"config {config_path}: YAML parse error: {exc}"
-        ) from exc
+        raise ConfigError(f"config {config_path}: YAML parse error: {exc}") from exc
 
     if data is None:
-        raise ConfigError(
-            f"config {config_path}: file is empty; expected a YAML mapping"
-        )
+        raise ConfigError(f"config {config_path}: file is empty; expected a YAML mapping")
     if not isinstance(data, dict):
-        raise ConfigError(
-            f"config {config_path}: top-level YAML value must be a mapping, "
-            f"got {type(data).__name__}"
-        )
+        raise ConfigError(f"config {config_path}: top-level YAML value must be a mapping, got {type(data).__name__}")
 
     # 4. Validate with pydantic.
     try:

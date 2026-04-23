@@ -21,8 +21,8 @@ def _free_tcp_port() -> int:
 
 
 @pytest.mark.asyncio
-async def test_sync_stdio_split_brain(tmp_path: Path) -> None:
-    """Skill with server-registered tools: tools stripped, scripts/ not materialised."""
+async def test_sync_stdio_skill_with_declared_tools_v0_1(tmp_path: Path) -> None:
+    """v0.1: no server-side tools — manifest keeps tools:; no split-brain note."""
     out_dir = tmp_path / "skills_out"
     config_file = tmp_path / "config.yaml"
     data_dir = tmp_path / "data"
@@ -71,11 +71,11 @@ webhook_port: {port}
     skill_md = (synced_skill / "SKILL.md").read_text(encoding="utf-8")
     assert "test-skill" in skill_md
     assert "Test skill description" in skill_md
-    assert "tools:" not in skill_md
-    assert "shared skills server" in skill_md
+    assert "tools:" in skill_md
+    assert "shared skills server" not in skill_md
 
     meta = json.loads((out_dir / ".skills-sync-meta.json").read_text(encoding="utf-8"))
-    assert meta["skills"]["test-skill"]["tools_registered"] == ["test_tool"]
+    assert meta["skills"]["test-skill"]["tools_registered"] == []
 
     assert not (out_dir / ".skills-sync-backup").exists()  # first sync: nothing to back up
 

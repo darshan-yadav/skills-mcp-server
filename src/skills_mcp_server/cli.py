@@ -6,11 +6,12 @@ import logging
 import sys
 from pathlib import Path
 
-from skills_mcp_server.config import load_config, ConfigError
-from skills_mcp_server.registry import SkillRegistry
+from skills_mcp_server.config import ConfigError, load_config
 from skills_mcp_server.mcp_app import create_mcp_server
+from skills_mcp_server.registry import SkillRegistry
 
 logger = logging.getLogger(__name__)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="skills-mcp-server")
@@ -36,7 +37,14 @@ def main() -> int:
         if config_path.exists():
             print(f"Error: {config_path} already exists.", file=sys.stderr)
             return 1
-        config_path.write_text("sources:\n  - name: local-dev\n    type: local\n    path: ./skills\ndata_dir: ./data\nlog_level: info\n")
+        init_yaml = """sources:
+  - name: local-dev
+    type: local
+    path: ./skills
+data_dir: ./data
+log_level: info
+"""
+        config_path.write_text(init_yaml)
         print(f"Initialized {config_path}")
         return 0
 
@@ -45,23 +53,23 @@ def main() -> int:
     except ConfigError as exc:
         print(exc, file=sys.stderr)
         return 1
-        
+
     logging.getLogger().setLevel(config.log_level.upper())
 
     sources = []
     for s_conf in config.sources:
         if s_conf.type == "local":
             from skills_mcp_server.sources.local import LocalSource
+
             try:
                 sources.append(LocalSource(s_conf.name, s_conf.path))
             except Exception as e:
                 logger.error(e)
         elif s_conf.type == "git":
             from skills_mcp_server.sources.git import GitSource
+
             try:
-                sources.append(GitSource(
-                    s_conf.name, s_conf.url, s_conf.ref, config.data_dir, s_conf.subpath
-                ))
+                sources.append(GitSource(s_conf.name, s_conf.url, s_conf.ref, config.data_dir, s_conf.subpath))
             except Exception as e:
                 logger.error(e)
 
@@ -76,10 +84,10 @@ def main() -> int:
     if args.command == "run":
         registry.reload()
         app = create_mcp_server(registry)
-        
+
         from aiohttp import web
         from mcp.server.stdio import stdio_server
-        
+
         async def webhook_reload(request):
             if config.webhook_secret:
                 auth = request.headers.get("Authorization")
@@ -89,7 +97,7 @@ def main() -> int:
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, registry.reload)
             return web.Response(text="Reloaded")
-            
+
         async def admin_reload(request):
             # Admin commands must come from localhost
             if request.remote not in ("127.0.0.1", "::1", "localhost"):
@@ -103,18 +111,18 @@ def main() -> int:
             webapp = web.Application()
             webapp.router.add_post("/webhook/reload", webhook_reload)
             webapp.router.add_post("/admin/reload", admin_reload)
-            
+
             runner = web.AppRunner(webapp)
             await runner.setup()
             site = web.TCPSite(runner, "0.0.0.0", config.webhook_port)
             await site.start()
             logger.info("Started admin/webhook server on port %d", config.webhook_port)
-            
+
             async with stdio_server() as (read_stream, write_stream):
                 await app.run(read_stream, write_stream, app.create_initialization_options())
-                
+
             await runner.cleanup()
-        
+
         try:
             asyncio.run(run_daemons())
         except KeyboardInterrupt:
@@ -123,6 +131,7 @@ def main() -> int:
 
     if args.command == "reload":
         import urllib.request
+
         url = f"http://127.0.0.1:{config.webhook_port}/admin/reload"
         try:
             req = urllib.request.Request(url, method="POST")

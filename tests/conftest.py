@@ -23,11 +23,10 @@ from __future__ import annotations
 import os
 import subprocess
 import textwrap
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Callable, Mapping
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -87,6 +86,7 @@ def tmp_config_dir(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Git repo factory
 # ---------------------------------------------------------------------------
+
 
 def _run_git(cwd: Path, *args: str) -> None:
     """Invoke git with a hermetic env so tests don't pick up user config."""
@@ -150,6 +150,7 @@ def git_repo_factory(tmp_path: Path) -> Callable[[Mapping[str, str]], Path]:
 # ---------------------------------------------------------------------------
 # SKILL.md helper
 # ---------------------------------------------------------------------------
+
 
 def sample_skill_md(
     name: str,

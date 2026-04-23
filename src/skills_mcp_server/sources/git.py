@@ -14,8 +14,8 @@ import os
 import stat
 import subprocess
 import time
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from skills_mcp_server.models import SkillBundle
 from skills_mcp_server.sources.base import SourceError
@@ -71,9 +71,7 @@ class GitSource:
             # Prevent subpath traversal outside the cache_dir
             scan_root = Path(os.path.realpath(scan_root / self.subpath))
             if not str(scan_root).startswith(str(self.cache_dir) + os.sep) and str(scan_root) != str(self.cache_dir):
-                raise SourceError(
-                    f"git source {self.name!r}: subpath {self.subpath!r} escapes repo root"
-                )
+                raise SourceError(f"git source {self.name!r}: subpath {self.subpath!r} escapes repo root")
 
         if not scan_root.exists() or not scan_root.is_dir():
             logger.warning("source %r: scan root %s is missing or not a directory", self.name, scan_root)
@@ -83,7 +81,7 @@ class GitSource:
 
         # Delegate the actual directory walk to LocalSource
         local_source = LocalSource(name=self.name, root=scan_root)
-        
+
         for bundle in local_source.load():
             yield dataclasses.replace(bundle, commit_sha=commit_sha)
 
@@ -112,8 +110,7 @@ class GitSource:
                         "and cache is empty. Cannot start."
                     )
                 logger.warning(
-                    "git source %r: lock acquisition timed out after %ss. "
-                    "Skipping fetch and using existing cache.",
+                    "git source %r: lock acquisition timed out after %ss. Skipping fetch and using existing cache.",
                     self.name,
                     timeout,
                 )
@@ -172,7 +169,7 @@ class GitSource:
         """Alter write permissions on the cache directory recursively."""
         if not self.cache_dir.exists():
             return
-            
+
         def _chmod(path: str) -> None:
             try:
                 current = os.stat(path).st_mode

@@ -16,7 +16,6 @@ from skills_mcp_server.models import SkillBundle, SkillManifest
 from skills_mcp_server.sources.base import Source, SourceError
 from skills_mcp_server.sources.local import LocalSource
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -89,8 +88,7 @@ def test_broken_skill_is_skipped_not_raised(
     # loader's warning contains the bundle path; check for the slug.
     matching = [rec for rec in caplog.records if "broken-skill" in rec.getMessage()]
     assert matching, (
-        "expected a WARNING-or-above log mentioning 'broken-skill'; "
-        f"got {[r.getMessage() for r in caplog.records]}"
+        f"expected a WARNING-or-above log mentioning 'broken-skill'; got {[r.getMessage() for r in caplog.records]}"
     )
     assert all(rec.levelno >= logging.WARNING for rec in matching)
 
@@ -188,12 +186,9 @@ def test_symlink_escape_rejected(
     assert bundles == []
     # Escape was logged — message phrasing is internal but must mention
     # "escape" per the implementation. Stay flexible on wording.
-    escape_records = [
-        rec for rec in caplog.records if "escape" in rec.getMessage().lower()
-    ]
+    escape_records = [rec for rec in caplog.records if "escape" in rec.getMessage().lower()]
     assert escape_records, (
-        "expected a WARNING log about the symlink escape; got "
-        f"{[r.getMessage() for r in caplog.records]}"
+        f"expected a WARNING log about the symlink escape; got {[r.getMessage() for r in caplog.records]}"
     )
 
 
@@ -254,13 +249,7 @@ def test_skill_md_malformed_frontmatter_is_skipped(
     root = tmp_path / "root"
     (root / "bad").mkdir(parents=True)
     # Invalid YAML: unclosed list.
-    (root / "bad" / "SKILL.md").write_text(
-        "---\n"
-        "name: [unclosed\n"
-        "description: this will never parse\n"
-        "---\n\n"
-        "# body\n"
-    )
+    (root / "bad" / "SKILL.md").write_text("---\nname: [unclosed\ndescription: this will never parse\n---\n\n# body\n")
     # Include one good bundle to confirm only the bad one is dropped.
     _write_skill_md(
         root / "good",
@@ -274,10 +263,7 @@ def test_skill_md_malformed_frontmatter_is_skipped(
 
     slugs = {b.slug for b in bundles}
     assert slugs == {"good"}
-    assert any(
-        "bad" in rec.getMessage() and rec.levelno >= logging.WARNING
-        for rec in caplog.records
-    )
+    assert any("bad" in rec.getMessage() and rec.levelno >= logging.WARNING for rec in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -294,19 +280,14 @@ def test_skill_md_no_frontmatter_fence_is_skipped(
     """
     root = tmp_path / "root"
     (root / "no-frontmatter").mkdir(parents=True)
-    (root / "no-frontmatter" / "SKILL.md").write_text(
-        "# Just a heading\n\nNo frontmatter fence at all.\n"
-    )
+    (root / "no-frontmatter" / "SKILL.md").write_text("# Just a heading\n\nNo frontmatter fence at all.\n")
 
     source = LocalSource("sample", root)
     with caplog.at_level(logging.WARNING, logger="skills_mcp_server.sources.local"):
         bundles = list(source.load())
 
     assert bundles == []
-    assert any(
-        "no-frontmatter" in rec.getMessage() and rec.levelno >= logging.WARNING
-        for rec in caplog.records
-    )
+    assert any("no-frontmatter" in rec.getMessage() and rec.levelno >= logging.WARNING for rec in caplog.records)
 
 
 # ---------------------------------------------------------------------------

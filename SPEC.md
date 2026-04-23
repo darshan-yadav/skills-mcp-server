@@ -49,8 +49,8 @@ Everything in this list is explicitly out of v0.1 scope. Most items are fully de
 - **No server-side script execution.** Skills may ship bundled scripts, but v0.1 exposes them only as MCP *resources* (readable files) — it never runs them. Scripts continue to execute client-side in the agent's own sandbox exactly as they do today. Moves to phase 2 (§16.1).
 - **No webhook endpoint.** Operators trigger reloads with the CLI or rely on the scheduled-pull loop. Phase 2 (§16.3).
 - **No rich operator CLI.** v0.1 ships `run`, `init`, `reload`, and `selftest`. Commands like `pull`, `sync`, `pin`, `rollback`, `diff`, `add-source`, `remove-source` are phase 2 (§16.4).
-- **No agent-facing refresh MCP tool.** Phase 2 (§16.2).
-- **No Claude Code filesystem sync.** Companion CLI that materialises skills into `~/.claude/skills/` is phase 3 (§17).
+- **No agent-facing refresh MCP tool.** Phase 2 (§16.2). v0.1 exposes only the operator `reload` tool (§8.4), not `refresh_skills`.
+- **No `skills-sync` watch mode or extra target layouts.** The **`skills-sync pull`** CLI that materialises skills into `~/.claude/skills/` **is v0.1** (§2, §17.1). Phase 3 (§17.3) adds daemon/watch mode, richer conflict handling, and Cursor/Codex layouts — not the initial pull command.
 - **No hardened execution sandbox.** When execution lands in phase 2 it runs in a subprocess (§16.1.2) — fresh interpreter per call, timeout-enforced, but sharing the server container's Python environment with no cgroups limits. Per-skill venvs, CPU/memory/wall-clock caps, and read-only mount hardening are phase 4 (§18).
 - **No package registry with uploads.** There is no `skills publish` to a central index in v0.1 or phase 2. Skills are distributed by git URL. Opt-in registry is phase 4 (§18).
 - **No authoring UI.** Skills are authored in files, version-controlled externally.
@@ -1002,7 +1002,7 @@ Two tracks converge at v1.0:
 
 ### 19.1 Execution model (phase 2, resolved as subprocess)
 
-An earlier draft specified in-process `importlib`-based execution. This was rejected for two reasons raised in review: (a) a runaway or blocking script would hang the server's event loop for every connected client, and (b) `sys.modules` hot-reload is notoriously unreliable and would produce half-old / half-new module state after skill updates. **Normative phase-2 rule (§16.1):** declared tools are invoked in a **fresh Python subprocess** per call, with JSON on stdin, JSON (or text) on stdout. Fresh interpreter per call means timeouts actually kill the runaway, and on-disk updates are picked up automatically on the next invocation. Phase 4 (§18) adds per-skill venvs and resource limits on top of this same subprocess contract.
+An earlier draft specified in-process `importlib`-based execution. This was rejected for two reasons raised in review: (a) a runaway or blocking script would hang the server's event loop for every connected client, and (b) `sys.modules` hot-reload is notoriously unreliable and would produce half-old / half-new module state after skill updates. **Normative phase-2 rule (§16.1):** declared tools are invoked in a **fresh Python subprocess** per call. Arguments are JSON on stdin (§16.1.2); the structured result is read from **`MCP_RESULT_FILE`** (not stdout — stdout is logged only). Fresh interpreter per call means timeouts actually kill the runaway, and on-disk updates are picked up automatically on the next invocation. Phase 4 (§18) adds per-skill venvs and resource limits on top of this same subprocess contract.
 
 ### 19.2 Hot reload vs MCP clients (v0.1 + phase 2)
 
