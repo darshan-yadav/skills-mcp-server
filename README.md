@@ -240,3 +240,7 @@ Put TLS and network ACLs in front when exposing beyond localhost. v0.1 does not 
 - [`SPEC.md`](./SPEC.md) — full design spec and roadmap
 - [`docs/agentic-sdlc.md`](./docs/agentic-sdlc.md) — architecture notes
 - [`skills-sync/README.md`](./skills-sync/README.md) — the skills-sync helper
+
+## License
+
+This repository is licensed under the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`). See [`LICENSE`](./LICENSE).

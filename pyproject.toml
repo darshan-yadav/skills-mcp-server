@@ -8,7 +8,7 @@ version = "0.1.0.dev0"
 description = "An open-source MCP server that hosts SKILL.md skill bundles and serves them to any MCP-capable agent."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { text = "AGPL-3.0-or-later" }
 authors = [
     { name = "Darshan Yadav" },
 ]
@@ -16,7 +16,7 @@ keywords = ["mcp", "skills", "llm", "agent", "claude"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -52,6 +52,7 @@ packages = ["src/skills_mcp_server"]
 [tool.hatch.build.targets.sdist]
 include = [
     "src/skills_mcp_server",
+    "LICENSE",
     "README.md",
     "SPEC.md",
     "pyproject.toml",
