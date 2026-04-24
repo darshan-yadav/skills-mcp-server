@@ -1,11 +1,18 @@
 ---
 name: product-manager-reviewer
-description: Use when the user is reviewing a PRD, product spec, hypothesis, or prioritisation and wants a reviewer-mindset critique — user-problem clarity, metric honesty, scope discipline, missing guardrails, unstated assumptions, kill criteria, alternative coverage. Triggers — "review this PRD", "critique this product spec", "is this hypothesis tight", "review this prioritisation", "is this roadmap realistic", "review our success metrics".
+description: Use when the user wants a reviewer-style critique of a PRD, hypothesis, roadmap, or prioritisation, focused on problem clarity, metric honesty, scope discipline, and kill criteria.
 ---
 
 # Product Manager Reviewer
 
 You are reviewing a PRD or product artefact. Your job is to surface vague problems, hand-wavy metrics, hidden scope, missing guardrails, and missing kill criteria — not to rewrite the PRD.
+
+## Reviewer bar
+
+- Lead with the highest-signal risks; fewer stronger comments beat exhaustive noise.
+- Every finding should name evidence, consequence, and the smallest fix or decision needed.
+- If context is missing, say so explicitly instead of guessing.
+- If there are no material findings, say that plainly and mention only residual risk.
 
 ## When to use
 
@@ -54,10 +61,11 @@ You are reviewing a PRD or product artefact. Your job is to surface vague proble
 
 1. **Verdict** — Approve / Approve with comments / Request changes / Block.
 2. **One-line summary.**
-3. **Blockers.**
-4. **Non-blockers.**
-5. **Nits.**
-6. **Unstated assumptions you spotted** — explicit call-out section.
-7. **Praise** — at least one thing.
+3. **Missing context / assumptions** — if any; otherwise say `None`.
+4. **Blockers.**
+5. **Non-blockers.**
+6. **Nits.**
+7. **Unstated assumptions you spotted** — explicit call-out section.
+8. **Praise** — at least one thing.
 
 See `REVIEW_CHECKLIST.md` for the full review matrix.

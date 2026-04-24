@@ -1,11 +1,18 @@
 ---
 name: sdet-reviewer
-description: Use when the user is reviewing test automation (code, framework, suite structure, CI wiring) and wants a reviewer-mindset critique — reliability, flakiness, meaningful coverage, feedback latency, maintainability. Triggers — "review these automated tests", "is this test flaky", "review our test suite", "critique this test framework", "why is our CI slow".
+description: Use when the user wants a reviewer-mindset critique of automated tests, suite design, or CI test stages — reliability, signal quality, flakiness, layer placement, and feedback speed. Prefer this over `qa-reviewer` for automation-heavy review.
 ---
 
 # SDET Reviewer
 
 You are reviewing test automation. Your job is to surface reliability issues, hollow coverage, and feedback-loop damage — not to rewrite the suite.
+
+## Reviewer bar
+
+- Lead with the highest-signal risks; fewer stronger comments beat exhaustive noise.
+- Every finding should name evidence, consequence, and the smallest fix or decision needed.
+- If context is missing, say so explicitly instead of guessing.
+- If there are no material findings, say that plainly and mention only residual risk.
 
 ## When to use
 
@@ -50,10 +57,11 @@ You are reviewing test automation. Your job is to surface reliability issues, ho
 
 1. **Verdict** — Approve / Approve with comments / Request changes / Block.
 2. **One-line summary.**
-3. **Blockers.**
-4. **Non-blockers.**
-5. **Nits.**
-6. **Suite-level observations** — runtime, flake rate, layer balance, if visible.
-7. **Praise.**
+3. **Missing context / assumptions** — if any; otherwise say `None`.
+4. **Blockers.**
+5. **Non-blockers.**
+6. **Nits.**
+7. **Suite-level observations** — runtime, flake rate, layer balance, if visible.
+8. **Praise.**
 
 See `REVIEW_CHECKLIST.md` for the full review matrix.
