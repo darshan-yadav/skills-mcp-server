@@ -4,3 +4,12 @@ sources:
     path: /skills
 data_dir: /data
 log_level: info
+
+# Browser-based admin UI for managing local skills over HTTP.
+# Override these via env vars in real deployments.
+admin_ui:
+  enabled: true
+  username: ${SKILLS_ADMIN_USERNAME:-admin}
+  password: ${SKILLS_ADMIN_PASSWORD:-admin-password}
+  session_secret: ${SKILLS_ADMIN_SESSION_SECRET:-change-this-development-session-secret}
+  session_ttl_seconds: 43200

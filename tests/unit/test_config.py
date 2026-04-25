@@ -249,6 +249,33 @@ def test_duplicate_source_names_rejected(tmp_path: Path, local_sample_skills_dir
     assert "duplicated" in str(exc_info.value)
 
 
+def test_admin_ui_enabled_requires_credentials(tmp_path: Path, local_sample_skills_dir: Path) -> None:
+    config_path = _write_yaml(
+        tmp_path / "config.yaml",
+        {
+            "sources": [
+                {
+                    "name": "local-sample",
+                    "type": "local",
+                    "path": str(local_sample_skills_dir),
+                }
+            ],
+            "admin_ui": {
+                "enabled": True,
+                "username": "admin",
+            },
+        },
+    )
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(config_path)
+
+    message = str(exc_info.value)
+    assert "admin_ui" in message
+    assert "password" in message
+    assert "session_secret" in message
+
+
 def test_local_path_nonexistent_rejected(tmp_path: Path) -> None:
     """A local source pointing at a non-existent directory fails."""
     missing = tmp_path / "does-not-exist"

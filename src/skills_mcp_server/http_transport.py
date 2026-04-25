@@ -19,6 +19,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Mount, Route
 
+from skills_mcp_server.admin_ui import create_admin_routes
 from skills_mcp_server.config import Config
 from skills_mcp_server.registry import SkillRegistry
 
@@ -71,5 +72,6 @@ def create_http_starlette_app(*, mcp_server: Server, registry: SkillRegistry, co
         Route("/webhook/reload", endpoint=webhook_reload, methods=["POST"]),
         Route("/admin/reload", endpoint=admin_reload, methods=["POST"]),
     ]
+    routes.extend(create_admin_routes(registry=registry, config=config))
 
     return Starlette(routes=routes)

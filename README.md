@@ -112,6 +112,9 @@ curl -X POST http://localhost:8847/admin/reload
 
 Or call the `reload` MCP tool from your editor.
 
+If you want a browser admin surface instead of file-system edits, enable the
+authenticated admin UI and manage skills at `http://localhost:8847/admin`.
+
 **Frontmatter rules (minimum):**
 
 | Field         | Required | Purpose                                                     |
@@ -146,6 +149,9 @@ log_level: info
 Restart the compose stack. Team skills now appear alongside local ones.
 
 If the same skill `name` appears in multiple sources, the **first one listed wins**.
+
+The browser admin UI can edit and upload bundles only for `local` sources.
+`git` sources stay visible in the dashboard, but remain read-only by design.
 
 ---
 
@@ -194,6 +200,39 @@ Then connect your editor to `http://localhost:8847/sse` as above.
 </details>
 
 <details>
+<summary><b>Enable the admin UI</b></summary>
+
+Add an `admin_ui` block to your config:
+
+```yaml
+sources:
+  - name: local
+    type: local
+    path: /skills
+data_dir: /data
+log_level: info
+admin_ui:
+  enabled: true
+  username: ${SKILLS_ADMIN_USERNAME:-admin}
+  password: ${SKILLS_ADMIN_PASSWORD}
+  session_secret: ${SKILLS_ADMIN_SESSION_SECRET}
+  session_ttl_seconds: 43200
+```
+
+Then start `run-http` and sign in at `http://localhost:8847/admin`.
+
+What the admin UI supports today:
+
+- Browse all loaded bundles with source-aware status.
+- Create new skill bundles in writable local sources.
+- Edit `SKILL.md` and supporting text files in-place.
+- Upload bundle zip files and individual bundle assets.
+- Delete bundle files or whole local bundles.
+
+The admin UI follows the editorial, warm-surface design system documented in [`DESIGN.md`](./DESIGN.md).
+</details>
+
+<details>
 <summary><b>skills-sync — materialise skills to <code>~/.claude/skills/</code></b></summary>
 
 Claude Code auto-loads skills from `~/.claude/skills/`. To mirror what your MCP server exposes into that folder:
@@ -230,6 +269,8 @@ Source layout: `src/skills_mcp_server/`. Python 3.11+.
 | `POST` | `/messages/?session_id=…`        | Client JSON-RPC (path advertised via SSE) |
 | `POST` | `/admin/reload`                  | Trigger a skill reload                    |
 | `POST` | `/webhook/reload`                | Reload via webhook (bearer-authenticated) |
+| `GET`  | `/admin/login`                   | Admin sign-in page                        |
+| `GET`  | `/admin`                         | Admin dashboard for local skill bundles   |
 
 Put TLS and network ACLs in front when exposing beyond localhost. v0.1 does not implement app-level auth on the MCP or reload routes.
 

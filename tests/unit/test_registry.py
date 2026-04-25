@@ -53,3 +53,43 @@ def test_registry_collision():
 
     # Latter source should win
     assert registry.get_bundle("skill1") is bundle2
+
+
+def test_registry_reload_single_source_updates_only_that_source():
+    bundle1 = SkillBundle(
+        source_name="src1",
+        slug="slug1",
+        bundle_path=Path("/tmp"),
+        manifest=SkillManifest(name="skill1", description="desc1"),
+        body="body1",
+        resources=(),
+    )
+    bundle2 = SkillBundle(
+        source_name="src2",
+        slug="slug2",
+        bundle_path=Path("/tmp"),
+        manifest=SkillManifest(name="skill2", description="desc2"),
+        body="body2",
+        resources=(),
+    )
+
+    src1 = MockSource("src1", [bundle1])
+    src2 = MockSource("src2", [bundle2])
+    registry = SkillRegistry([src1, src2])
+    registry.reload()
+
+    updated_bundle1 = SkillBundle(
+        source_name="src1",
+        slug="slug1b",
+        bundle_path=Path("/tmp"),
+        manifest=SkillManifest(name="skill1b", description="desc1b"),
+        body="body1b",
+        resources=(),
+    )
+    src1.bundles = [updated_bundle1]
+
+    registry.reload_source("src1")
+
+    assert registry.get_bundle("skill1") is None
+    assert registry.get_bundle("skill1b") is updated_bundle1
+    assert registry.get_bundle("skill2") is bundle2

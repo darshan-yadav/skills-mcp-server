@@ -29,6 +29,7 @@ dependencies = [
     "pydantic>=2",
     "GitPython",
     "aiohttp",
+    "python-multipart",
 ]
 
 [project.optional-dependencies]

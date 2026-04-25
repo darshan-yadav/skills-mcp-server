@@ -43,6 +43,7 @@ __all__ = [
     "SourceConfig",
     "LocalSourceConfig",
     "GitSourceConfig",
+    "AdminUIConfig",
     "ConfigError",
     "load_config",
 ]
@@ -142,6 +143,54 @@ SourceConfig = Annotated[
 ]
 
 
+class AdminUIConfig(BaseModel):
+    """Configuration for the browser-based skill administration UI."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable the authenticated admin UI under ``/admin`` in HTTP mode.",
+    )
+    username: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Admin login username. Prefer env-var substitution in YAML.",
+    )
+    password: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Admin login password. Prefer env-var substitution in YAML.",
+    )
+    session_secret: str | None = Field(
+        default=None,
+        min_length=16,
+        description="Secret used to sign admin session cookies.",
+    )
+    session_ttl_seconds: int = Field(
+        default=43200,
+        ge=300,
+        le=604800,
+        description="Admin session lifetime in seconds (default: 12 hours).",
+    )
+
+    @model_validator(mode="after")
+    def _require_credentials_when_enabled(self) -> AdminUIConfig:
+        if not self.enabled:
+            return self
+
+        missing: list[str] = []
+        if not self.username:
+            missing.append("username")
+        if not self.password:
+            missing.append("password")
+        if not self.session_secret:
+            missing.append("session_secret")
+        if missing:
+            raise ValueError("admin_ui.enabled=true requires: " + ", ".join(missing))
+        return self
+
+
 # ---------------------------------------------------------------------------
 # Top-level config
 # ---------------------------------------------------------------------------
@@ -207,6 +256,10 @@ class Config(BaseModel):
         ge=1,
         le=65535,
         description="TCP port for ``run-http`` (GET /sse, POST /messages/, reload endpoints).",
+    )
+    admin_ui: AdminUIConfig | None = Field(
+        default=None,
+        description="Optional browser-based admin UI configuration for HTTP mode.",
     )
 
     @model_validator(mode="after")
